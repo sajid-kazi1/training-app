@@ -57,9 +57,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
      - name: tag and push image
-         run: |
-          podman tag flask-app:latest ghcr.io/${{ github.repository_owner}}/training-app:latest
-          podman push ghcr.io/${{ github.repository_owner }}/training-app:latest
+          run: |
+           podman tag flask-app:latest ghcr.io/${{ github.repository_owner}}/training-app:latest
+           podman push ghcr.io/${{ github.repository_owner }}/training-app:latest
 
       - name: Login to OpenShift cluster
         env:
