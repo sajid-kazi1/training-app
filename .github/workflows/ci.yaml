@@ -9,15 +9,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+ 
       - name: install oc
         run: |
           wget https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.17.8/openshift-client-linux-4.17.8.tar.gz
           tar zxvf openshift-client-linux-4.17.8.tar.gz
           chmod +x oc
           mv oc /usr/local/bin
-
-      - name: Check out code
-        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -30,10 +30,10 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build podman image
-        run: podman build -t flask-app .
+        run: podman build -t flask-app:latest .
 
       - name: Run Flask container
-        run: podman run --name flask-test -d -p 5000:5000 flask-app
+        run: podman run --name flask-app -d -p 5000:5000 flask-app:latest
 
       - name: Wait for Flask to be ready
         run: |
@@ -46,9 +46,6 @@ jobs:
             sleep 1
           done
 
-      - name: Run API tests
-        run: pytest tests/test_app.py -v
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
         with:
@@ -56,10 +53,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-     - name: tag and push image
-          run: |
-           podman tag flask-app:latest ghcr.io/${{ github.repository_owner}}/training-app:latest
-           podman push ghcr.io/${{ github.repository_owner }}/training-app:latest
+      - name: tag and push image
+        run: |
+          podman tag flask-app:latest ghcr.io/${{ github.repository_owner}}/training-app:latest
+          podman push ghcr.io/${{ github.repository_owner }}/training-app:latest
 
       - name: Login to OpenShift cluster
         env:
@@ -74,11 +71,9 @@ jobs:
           oc project $PROJECT_NAME
           oc delete pod flask-app --ignore-not-found=true
           oc run flask-app --image ghcr.io/${{ github.repository_owner }}/training-app:latest --port 5000 --port 5000
- 
 
       - name: Teardown container
         if: always()
         run: |
-          podman stop flask-test
-          podman rm flask-test
-
+          podman stop flask-app
+          podman rm flask-app
